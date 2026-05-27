@@ -34,6 +34,21 @@ pnpm tauri build
 ```
 
 产物在 `src-tauri/target/release/bundle/`(macOS 下是 `.app` 和 `.dmg`)。
+macOS 出通用版(Intel+Apple Silicon)需:`rustup target add x86_64-apple-darwin` 后
+`pnpm tauri build --target universal-apple-darwin`。
+
+## 一次出 Windows + macOS(GitHub Actions)
+
+Windows 安装包无法在 macOS 上交叉编译,用 CI 在各自系统上构建。
+工作流在 `.github/workflows/release.yml`:
+
+1. 把仓库推到 GitHub。
+2. 打一个版本标签触发构建并发布到 Release(草稿):
+   ```bash
+   git tag v0.1.0 && git push origin v0.1.0
+   ```
+3. CI 在 `windows-latest` 出 `.msi` / `.exe`,在 `macos-latest` 出通用版 `.dmg`,
+   汇总到一个 GitHub Release。也可在 Actions 页面手动运行(产物作为 artifact 下载)。
 
 ## 自定义
 
