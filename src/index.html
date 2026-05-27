@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>悬浮待办</title>
+    <script type="module" src="/main.js" defer></script>
+  </head>
+
+  <body class="mode-ball">
+    <!-- ============ 悬浮球(吉祥物:小驴 Dudu) ============ -->
+    <div id="ball" title="点击展开待办 · 拖动可移动">
+      <div class="ball-disc">
+        <svg class="donkey" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="headG" cx="50%" cy="38%" r="68%">
+              <stop offset="0%" stop-color="#bcbbd4" />
+              <stop offset="100%" stop-color="#8d8ca6" />
+            </radialGradient>
+          </defs>
+
+          <!-- 耳朵 -->
+          <g class="ear ear-l">
+            <ellipse cx="44" cy="33" rx="9" ry="20" fill="#9594ae" stroke="#6f6e86" stroke-width="2" />
+            <ellipse cx="44" cy="34" rx="4" ry="13" fill="#cdaecf" />
+          </g>
+          <g class="ear ear-r">
+            <ellipse cx="76" cy="33" rx="9" ry="20" fill="#9594ae" stroke="#6f6e86" stroke-width="2" />
+            <ellipse cx="76" cy="34" rx="4" ry="13" fill="#cdaecf" />
+          </g>
+
+          <!-- 头 -->
+          <ellipse cx="60" cy="64" rx="32" ry="29" fill="url(#headG)" stroke="#6f6e86" stroke-width="2.5" />
+
+          <!-- 额前鬃毛 -->
+          <path class="forelock" d="M49 41 q3 -13 11 -5 q8 -8 11 5 q-11 6 -22 0 z" fill="#6f6e86" />
+
+          <!-- 腮红 -->
+          <circle cx="39" cy="72" r="6" fill="#ff9bb0" opacity="0.5" />
+          <circle cx="81" cy="72" r="6" fill="#ff9bb0" opacity="0.5" />
+
+          <!-- 口鼻 -->
+          <ellipse cx="60" cy="80" rx="22" ry="15" fill="#dcd7e8" stroke="#6f6e86" stroke-width="2" />
+          <ellipse cx="52" cy="82" rx="2.4" ry="3.4" fill="#6f6e86" />
+          <ellipse cx="68" cy="82" rx="2.4" ry="3.4" fill="#6f6e86" />
+          <path d="M54 89 q6 4 12 0" fill="none" stroke="#6f6e86" stroke-width="1.6" stroke-linecap="round" />
+
+          <!-- 眼睛(会眨) -->
+          <g class="eyes">
+            <g>
+              <ellipse cx="49" cy="60" rx="7" ry="8" fill="#fff" stroke="#6f6e86" stroke-width="1.5" />
+              <circle cx="50" cy="61" r="4" fill="#3a3a4d" />
+              <circle cx="51.6" cy="59" r="1.4" fill="#fff" />
+            </g>
+            <g>
+              <ellipse cx="71" cy="60" rx="7" ry="8" fill="#fff" stroke="#6f6e86" stroke-width="1.5" />
+              <circle cx="70" cy="61" r="4" fill="#3a3a4d" />
+              <circle cx="71.6" cy="59" r="1.4" fill="#fff" />
+            </g>
+          </g>
+        </svg>
+      </div>
+      <div id="ball-badge" class="ball-badge">0</div>
+    </div>
+
+    <!-- ============ 待办面板 ============ -->
+    <div id="panel" class="card">
+      <header class="titlebar" data-tauri-drag-region>
+        <span class="title" data-tauri-drag-region>📌 Dudu 的待办</span>
+        <div class="win-btns">
+          <button id="btn-chat" class="icon-btn" title="和 Dudu(AI)聊聊">🐴</button>
+          <button id="btn-test" class="icon-btn" title="发送一条测试通知">🔔</button>
+          <button id="btn-collapse" class="collapse-btn" title="收起成悬浮球">
+            <svg class="door-icon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <!-- 门洞 -->
+              <rect x="25" y="8" width="16" height="34" rx="6" fill="#33354a" stroke="#cfd2dd" stroke-width="2.4" />
+              <!-- 半掩的门 -->
+              <path d="M25 9 L17 13 L17 41 L25 42 Z" fill="#7d7bd8" stroke="#cfd2dd" stroke-width="2" stroke-linejoin="round" />
+              <circle cx="20.3" cy="27" r="1.3" fill="#fff" />
+              <!-- 关门弧线 -->
+              <path d="M30 16 q6 8 0 18" fill="none" stroke="#cfd2dd" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="1 4" opacity="0.85" />
+              <!-- 小驴在门口挥手道别 -->
+              <ellipse cx="11" cy="35" rx="8" ry="8.5" fill="#9594ae" stroke="#5b5a72" stroke-width="2" />
+              <ellipse cx="7.2" cy="16.5" rx="2.4" ry="5" fill="#9594ae" stroke="#5b5a72" stroke-width="1.5" transform="rotate(-13 7.2 16.5)" />
+              <ellipse cx="14" cy="16.5" rx="2.4" ry="5" fill="#9594ae" stroke="#5b5a72" stroke-width="1.5" transform="rotate(11 14 16.5)" />
+              <ellipse cx="10.6" cy="22" rx="8" ry="7.4" fill="#aaa9c2" stroke="#5b5a72" stroke-width="2" />
+              <ellipse cx="10.6" cy="26" rx="5" ry="3.5" fill="#dcd7e8" />
+              <circle cx="8.4" cy="21" r="1.5" fill="#3a3a4d" />
+              <circle cx="13" cy="21" r="1.5" fill="#3a3a4d" />
+              <!-- 挥手前蹄(hover 时摆动) -->
+              <ellipse class="wave" cx="18.5" cy="23.5" rx="2.5" ry="4" fill="#9594ae" stroke="#5b5a72" stroke-width="1.5" />
+            </svg>
+            <span>收起</span>
+          </button>
+        </div>
+      </header>
+
+      <form id="add-form" class="add-row">
+        <input id="input-text" type="text" placeholder="要做的事…" autocomplete="off" required />
+        <input id="input-due" type="date" title="截止日期(可选)" />
+        <button type="submit" title="添加">＋</button>
+      </form>
+
+      <main class="lists">
+        <section>
+          <h2 class="section-title">待做 <span id="pending-count" class="badge">0</span></h2>
+          <ul id="pending-list" class="list"></ul>
+        </section>
+        <section>
+          <h2 class="section-title done-title">已完成 <span id="done-count" class="badge">0</span></h2>
+          <ul id="done-list" class="list done-list"></ul>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <button id="btn-export" class="link-btn">⬇ 导出日志</button>
+        <button id="btn-clear-done" class="link-btn">清空已完成</button>
+      </footer>
+
+      <!-- AI 聊天面板(覆盖在卡片上) -->
+      <div id="chat" class="chat" hidden>
+        <div class="chat-head" data-tauri-drag-region>
+          <button id="chat-back" class="icon-btn" title="返回待办">‹</button>
+          <span class="chat-title">🐴 和 Dudu 聊聊</span>
+          <select id="chat-engine" title="选择引擎">
+            <option value="claude">Claude Code</option>
+            <option value="codex">Codex</option>
+          </select>
+          <button id="chat-new" class="icon-btn" title="开新会话">＋</button>
+          <button id="chat-settings" class="icon-btn" title="设置">⚙</button>
+        </div>
+        <div id="chat-settings-box" class="chat-settings" hidden>
+          <label>工作目录<input id="chat-cwd" type="text" placeholder="留空 = 主目录(~)" /></label>
+          <label class="chk"><input type="checkbox" id="chat-full" /> 完整权限(跳过确认,可改文件 / 跑命令 / 用 skill)</label>
+          <label class="chk"><input type="checkbox" id="chat-context" checked /> 把我的待办作为上下文</label>
+          <div class="chat-tip" id="chat-avail"></div>
+        </div>
+        <div id="chat-msgs" class="chat-msgs"></div>
+        <form id="chat-form" class="chat-input">
+          <textarea id="chat-text" rows="1" placeholder="问 Dudu…它能用你本机的 skill"></textarea>
+          <button type="submit" title="发送">↑</button>
+        </form>
+      </div>
+
+      <!-- 导出工作日志弹窗 -->
+      <div id="export-modal" class="modal" hidden>
+        <div class="modal-card">
+          <div class="modal-title">导出工作日志</div>
+          <div class="seg" id="export-range">
+            <button data-range="month" class="active">本月</button>
+            <button data-range="year">本年</button>
+            <button data-range="custom">自定义</button>
+          </div>
+          <div id="export-custom" class="custom-range" hidden>
+            <label>从 <input type="date" id="export-from" /></label>
+            <label>到 <input type="date" id="export-to" /></label>
+          </div>
+          <label class="chk export-ai">
+            <input type="checkbox" id="export-ai" /> 用 AI(Dudu)润色成工作日志
+          </label>
+          <div class="modal-actions">
+            <button id="export-cancel" class="btn-ghost">取消</button>
+            <button id="export-go" class="btn-primary">导出 .md</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 图片缩放选中框(覆盖在选中的图片上,不写入保存内容) -->
+    <div id="img-select" class="img-select" hidden>
+      <div class="img-handle" title="拖拽缩放"></div>
+    </div>
+    <!-- 图片预览灯箱(全屏) -->
+    <div id="img-preview" class="img-preview" hidden>
+      <div class="preview-stage"><img alt="预览" /></div>
+      <div class="preview-toolbar">
+        <button data-act="zoomout" title="缩小">－</button>
+        <button data-act="zoomin" title="放大">＋</button>
+        <button data-act="rotate" title="旋转 90°">⟳</button>
+        <button data-act="reset" title="重置">重置</button>
+        <button data-act="close" title="关闭 (Esc)">✕</button>
+      </div>
+    </div>
+  </body>
+</html>
