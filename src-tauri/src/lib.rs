@@ -167,6 +167,36 @@ fn default_cwd() -> String {
     home_dir()
 }
 
+/// The app's own version (from Cargo.toml), used by the update check.
+#[tauri::command]
+fn app_version() -> String {
+    env!("CARGO_PKG_VERSION").to_string()
+}
+
+/// Open a URL in the user's default browser (for the "download update" link).
+#[tauri::command]
+fn open_url(url: String) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    let mut cmd = {
+        let mut c = Command::new("open");
+        c.arg(&url);
+        c
+    };
+    #[cfg(target_os = "windows")]
+    let mut cmd = {
+        let mut c = Command::new("cmd");
+        c.args(["/C", "start", "", &url]);
+        c
+    };
+    #[cfg(target_os = "linux")]
+    let mut cmd = {
+        let mut c = Command::new("xdg-open");
+        c.arg(&url);
+        c
+    };
+    cmd.spawn().map(|_| ()).map_err(|e| e.to_string())
+}
+
 /// Read the store and send one notification summarising pending todos.
 fn notify_pending(app: &tauri::AppHandle) {
     let Ok(path) = store_path(app) else { return };
@@ -217,7 +247,9 @@ pub fn run() {
             save_text,
             agent_available,
             ask_agent,
-            default_cwd
+            default_cwd,
+            app_version,
+            open_url
         ])
         .setup(|app| {
             // --- System tray: show/quit, keep app alive after window close ---
