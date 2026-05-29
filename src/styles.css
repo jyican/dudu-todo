@@ -418,7 +418,8 @@ input[type="date"] {
 .item.open .chevron {
   transform: rotate(90deg);
 }
-.item .del {
+.item .del,
+.item .edit {
   flex: 0 0 auto;
   border: none;
   background: transparent;
@@ -427,11 +428,22 @@ input[type="date"] {
   font-size: 14px;
   opacity: 0;
 }
-.item:hover .del {
+.item:hover .del,
+.item:hover .edit {
   opacity: 1;
 }
 .item .del:hover {
   color: var(--danger);
+}
+.item .edit:hover {
+  color: var(--accent);
+}
+
+/* 标题内联编辑 */
+.title-edit {
+  width: 100%;
+  font-size: 13px;
+  padding: 3px 6px;
 }
 
 /* ---- 富文本描述区 ---- */
@@ -870,6 +882,286 @@ input[type="date"] {
   width: 6px;
 }
 .lists::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+/* ---- 子待办 ---- */
+.subs {
+  margin-top: 8px;
+}
+.subs-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+.sub-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sub-item {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+.sub-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 7px;
+}
+.sub-check {
+  width: 14px;
+  height: 14px;
+  font-size: 9px;
+}
+.sub-item.done .sub-check {
+  background: var(--done);
+  border-color: var(--done);
+  color: #0b1a10;
+}
+.sub-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12.5px;
+  padding: 3px 5px;
+  outline: none;
+}
+.sub-title:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.sub-title:focus {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--accent);
+}
+.sub-item.done .sub-title {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+.sub-chevron {
+  font-size: 14px;
+}
+.sub-item.open .sub-chevron {
+  transform: rotate(90deg);
+}
+.sub-del {
+  font-size: 12px;
+  opacity: 0;
+}
+.sub-item:hover .sub-del {
+  opacity: 1;
+}
+.sub-del:hover {
+  color: var(--danger);
+}
+.sub-desc {
+  display: none;
+  width: 100%;
+  min-height: 48px;
+  max-height: 160px;
+  resize: vertical;
+  margin: 0 0 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 6px 8px;
+  outline: none;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.sub-item.open .sub-desc {
+  display: block;
+}
+.sub-desc:focus {
+  border-color: var(--accent);
+}
+.add-sub {
+  margin-top: 6px;
+  border: 1px dashed var(--line);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11.5px;
+  padding: 5px 8px;
+  cursor: pointer;
+  width: 100%;
+}
+.add-sub:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+/* ---- 工具箱(覆盖在卡片上,复用聊天面板的结构) ---- */
+.tools {
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  backdrop-filter: blur(18px);
+  border-radius: var(--card-radius);
+}
+.tools[hidden] {
+  display: none !important;
+}
+.tools-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  flex: 0 0 auto;
+}
+.tools-head #tools-back {
+  font-size: 20px;
+}
+.tools-tabs {
+  margin: 10px 10px 0;
+}
+.tools-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+.tool-pane[hidden] {
+  display: none !important;
+}
+.tool-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tool-io {
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 8px 9px;
+  outline: none;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.tool-io:focus {
+  border-color: var(--accent);
+}
+.tool-io[readonly] {
+  background: rgba(255, 255, 255, 0.03);
+}
+.tool-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tool-actions button {
+  flex: 1 1 auto;
+  min-width: 70px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+}
+.tool-actions button:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.copy-btn {
+  align-self: flex-end;
+  border: none;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+  font-size: 11.5px;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+.copy-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+.ts-row {
+  display: flex;
+  gap: 6px;
+}
+.ts-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+#ts-now {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font-size: 12px;
+  padding: 0 12px;
+  cursor: pointer;
+}
+#ts-now:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.ts-result {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
+}
+.ts-result.err {
+  color: var(--danger);
+  font-size: 12.5px;
+}
+.ts-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 9px;
+}
+.ts-key {
+  flex: 0 0 64px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.ts-val {
+  flex: 1 1 auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  word-break: break-all;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.tools-body::-webkit-scrollbar {
+  width: 6px;
+}
+.tools-body::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.15);
   border-radius: 3px;
 }
