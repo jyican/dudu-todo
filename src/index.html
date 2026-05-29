@@ -97,6 +97,13 @@
         </div>
       </header>
 
+      <!-- 版本更新提示(检测到新版本时出现) -->
+      <div id="update-banner" class="update-banner" hidden>
+        <span class="ub-text">🎉 发现新版本 <b id="ub-ver"></b></span>
+        <button id="ub-link" class="ub-link">前往下载</button>
+        <button id="ub-close" class="ub-close" title="忽略此版本">✕</button>
+      </div>
+
       <form id="add-form" class="add-row">
         <input id="input-text" type="text" placeholder="要做的事…" autocomplete="off" required />
         <input id="input-due" type="date" title="截止日期(可选)" />

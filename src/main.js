@@ -1275,6 +1275,57 @@ function setupTools() {
   });
 }
 
+// ---- Version update check (lightweight: GitHub latest release) ----
+const REPO = "jyican/dudu-todo";
+
+// Compare dotted numeric versions; true when `a` is strictly newer than `b`.
+function isNewerVersion(a, b) {
+  const pa = a.split(".").map((n) => parseInt(n, 10) || 0);
+  const pb = b.split(".").map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = pa[i] || 0;
+    const y = pb[i] || 0;
+    if (x > y) return true;
+    if (x < y) return false;
+  }
+  return false;
+}
+
+async function checkUpdate() {
+  let current;
+  try {
+    current = await invoke("app_version");
+  } catch (e) {
+    return; // not running under Tauri
+  }
+  let data;
+  try {
+    const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, {
+      headers: { Accept: "application/vnd.github+json" },
+    });
+    if (!res.ok) return; // no release yet / private repo / rate-limited → silent
+    data = await res.json();
+  } catch (e) {
+    console.warn("update check failed", e);
+    return;
+  }
+  const latest = (data.tag_name || "").replace(/^v/, "");
+  if (!latest || !isNewerVersion(latest, current)) return;
+  if (localStorage.getItem("ft.update.dismissed") === latest) return; // already ignored
+
+  const banner = document.querySelector("#update-banner");
+  document.querySelector("#ub-ver").textContent = "v" + latest;
+  const url = data.html_url || `https://github.com/${REPO}/releases/latest`;
+  document.querySelector("#ub-link").onclick = () => {
+    invoke("open_url", { url }).catch((e) => console.warn("open_url failed", e));
+  };
+  document.querySelector("#ub-close").onclick = () => {
+    localStorage.setItem("ft.update.dismissed", latest);
+    banner.hidden = true;
+  };
+  banner.hidden = false;
+}
+
 // ---- Wire up ----
 window.addEventListener("DOMContentLoaded", async () => {
   // Ball: distinguish a click (open panel) from a drag (move window).
@@ -1448,4 +1499,5 @@ window.addEventListener("DOMContentLoaded", async () => {
   await load();
   refresh();
   ensureNotifyPermission();
+  checkUpdate(); // best-effort, silent on failure
 });
