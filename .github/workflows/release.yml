@@ -49,9 +49,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
-          releaseName: "Dudu 待办 v__VERSION__"
+          releaseName: "dudu tools v__VERSION__"
           releaseBody: "自动构建的 Windows / macOS 安装包。macOS 为 Intel+Apple Silicon 通用版。"
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
 
