@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="stylesheet" href="styles.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>悬浮待办</title>
+    <title>dudu tools</title>
     <script type="module" src="/main.js" defer></script>
   </head>
 
@@ -67,8 +67,9 @@
     <!-- ============ 待办面板 ============ -->
     <div id="panel" class="card">
       <header class="titlebar" data-tauri-drag-region>
-        <span class="title" data-tauri-drag-region>📌 Dudu 的待办</span>
+        <span class="title" data-tauri-drag-region>📌 dudu tools</span>
         <div class="win-btns">
+          <button id="btn-tools" class="icon-btn" title="工具箱:转码 / JSON / 时间戳">🧰</button>
           <button id="btn-chat" class="icon-btn" title="和 Dudu(AI)聊聊">🐴</button>
           <button id="btn-test" class="icon-btn" title="发送一条测试通知">🔔</button>
           <button id="btn-collapse" class="collapse-btn" title="收起成悬浮球">
@@ -163,6 +164,56 @@
             <button id="export-cancel" class="btn-ghost">取消</button>
             <button id="export-go" class="btn-primary">导出 .md</button>
           </div>
+        </div>
+      </div>
+
+      <!-- 工具箱:转码 / JSON / 时间戳(覆盖在卡片上) -->
+      <div id="tools" class="tools" hidden>
+        <div class="tools-head" data-tauri-drag-region>
+          <button id="tools-back" class="icon-btn" title="返回待办">‹</button>
+          <span class="chat-title">🧰 工具箱</span>
+        </div>
+        <div class="seg tools-tabs" id="tools-tabs">
+          <button data-tool="codec" class="active">转码</button>
+          <button data-tool="json">JSON</button>
+          <button data-tool="ts">时间戳</button>
+        </div>
+        <div class="tools-body">
+          <!-- 转码:URL / Base64 编解码 -->
+          <section class="tool-pane" data-pane="codec">
+            <textarea id="codec-input" class="tool-io" placeholder="输入要编码 / 解码的文本…"></textarea>
+            <div class="tool-actions">
+              <button data-act="url-encode">URL 编码</button>
+              <button data-act="url-decode">URL 解码</button>
+              <button data-act="b64-encode">Base64 编码</button>
+              <button data-act="b64-decode">Base64 解码</button>
+            </div>
+            <textarea id="codec-output" class="tool-io" readonly placeholder="结果…"></textarea>
+            <button class="copy-btn" data-target="codec-output">复制结果</button>
+          </section>
+
+          <!-- JSON:格式化 / 压缩 -->
+          <section class="tool-pane" data-pane="json" hidden>
+            <textarea id="json-input" class="tool-io" placeholder='粘贴 JSON,如 {"a":1,"b":[2,3]}'></textarea>
+            <div class="tool-actions">
+              <button data-act="json-format">格式化</button>
+              <button data-act="json-minify">压缩</button>
+            </div>
+            <textarea id="json-output" class="tool-io" readonly placeholder="结果…"></textarea>
+            <button class="copy-btn" data-target="json-output">复制结果</button>
+          </section>
+
+          <!-- 时间戳:互转 -->
+          <section class="tool-pane" data-pane="ts" hidden>
+            <div class="ts-row">
+              <input id="ts-input" type="text" placeholder="时间戳或日期,如 1700000000 或 2023-11-15 12:00" />
+              <button id="ts-now" title="填入当前时间">此刻</button>
+            </div>
+            <div class="tool-actions">
+              <button data-act="ts-parse">转换</button>
+            </div>
+            <div id="ts-result" class="ts-result"></div>
+          </section>
         </div>
       </div>
     </div>

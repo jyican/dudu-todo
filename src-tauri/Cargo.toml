@@ -1,7 +1,7 @@
 [package]
 name = "floating-todo"
-version = "0.1.0"
-description = "Floating desktop todo with recurring reminders"
+version = "0.2.0"
+description = "dudu tools — floating desktop todo (with sub-todos) plus codec / JSON / timestamp utilities"
 authors = ["you"]
 edition = "2021"
 

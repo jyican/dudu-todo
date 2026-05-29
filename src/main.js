@@ -15,6 +15,7 @@ let todos = [];
 let expanded = false;
 let ballPos = null; // physical position of the ball, saved before expanding
 const expandedIds = new Set(); // todo ids whose description is expanded
+const subExpandedIds = new Set(); // sub-todo ids whose content is expanded
 let descSaveTimer = null;
 
 function scheduleSave() {
@@ -127,6 +128,15 @@ function itemEl(t) {
   chevron.textContent = "›";
   chevron.title = "展开/收起描述";
 
+  const edit = document.createElement("button");
+  edit.className = "edit";
+  edit.textContent = "✎";
+  edit.title = "编辑标题";
+  edit.addEventListener("click", (e) => {
+    e.stopPropagation();
+    startTitleEdit(t, text, body);
+  });
+
   const del = document.createElement("button");
   del.className = "del";
   del.textContent = "🗑";
@@ -142,7 +152,7 @@ function itemEl(t) {
   body.addEventListener("click", toggleDesc);
   chevron.addEventListener("click", toggleDesc);
 
-  row.append(check, body, chevron, del);
+  row.append(check, body, chevron, edit, del);
 
   // ---- Expandable rich-text description ----
   const area = document.createElement("div");
@@ -185,8 +195,159 @@ function itemEl(t) {
   });
   editor.addEventListener("paste", (e) => onPasteIntoEditor(e, editor, t));
 
-  area.append(toolbar, editor);
+  const subsWrap = document.createElement("div");
+  subsWrap.className = "subs";
+  renderSubs(subsWrap, t);
+
+  area.append(toolbar, editor, subsWrap);
   li.append(row, area);
+  return li;
+}
+
+// Inline-edit a todo's title. Swaps the title text for an input; commits on
+// Enter / blur, cancels on Esc.
+function startTitleEdit(t, textEl, body) {
+  if (body.querySelector(".title-edit")) return; // already editing
+  const input = document.createElement("input");
+  input.className = "title-edit";
+  input.value = t.text;
+  textEl.replaceWith(input);
+  input.focus();
+  input.select();
+
+  let closed = false;
+  const close = (save) => {
+    if (closed) return;
+    closed = true;
+    if (save) {
+      const v = input.value.trim();
+      if (v && v !== t.text) {
+        t.text = v;
+        persist();
+      }
+    }
+    refresh(); // rebuild — expand state is preserved via expandedIds
+  };
+  input.addEventListener("click", (e) => e.stopPropagation());
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      close(true);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      close(false);
+    }
+  });
+  input.addEventListener("blur", () => close(true));
+}
+
+// ---- Sub-todos (each has an editable title + content) ----
+function renderSubs(wrap, t) {
+  if (!Array.isArray(t.subs)) t.subs = [];
+  wrap.innerHTML = "";
+
+  const head = document.createElement("div");
+  head.className = "subs-head";
+  const open = t.subs.filter((s) => !s.done).length;
+  head.innerHTML =
+    '<span class="subs-label">子待办</span>' +
+    `<span class="badge">${open}/${t.subs.length}</span>`;
+
+  const ul = document.createElement("ul");
+  ul.className = "sub-list";
+  t.subs.forEach((s) => ul.appendChild(subEl(t, s, wrap)));
+
+  const addBtn = document.createElement("button");
+  addBtn.className = "add-sub";
+  addBtn.textContent = "＋ 添加子待办";
+  addBtn.addEventListener("click", () => {
+    const s = { id: uid(), text: "", desc: "", done: false };
+    t.subs.push(s);
+    subExpandedIds.add(s.id);
+    persist();
+    renderSubs(wrap, t);
+    const inp = wrap.querySelector(`[data-sub="${s.id}"] .sub-title`);
+    if (inp) inp.focus();
+  });
+
+  wrap.append(head, ul, addBtn);
+}
+
+function subEl(t, s, wrap) {
+  const li = document.createElement("li");
+  li.className = "sub-item" + (s.done ? " done" : "") + (subExpandedIds.has(s.id) ? " open" : "");
+  li.dataset.sub = s.id;
+
+  const row = document.createElement("div");
+  row.className = "sub-row";
+
+  const check = document.createElement("div");
+  check.className = "check sub-check";
+  check.textContent = "✓";
+  check.title = s.done ? "标记为未完成" : "标记为完成";
+  check.addEventListener("click", () => {
+    s.done = !s.done;
+    li.classList.toggle("done", s.done);
+    check.title = s.done ? "标记为未完成" : "标记为完成";
+    // Refresh the "open/total" badge without a full rebuild.
+    const badge = wrap.querySelector(".subs-head .badge");
+    if (badge) badge.textContent = `${t.subs.filter((x) => !x.done).length}/${t.subs.length}`;
+    persist();
+  });
+
+  const title = document.createElement("input");
+  title.className = "sub-title";
+  title.value = s.text;
+  title.placeholder = "子待办标题…";
+  title.addEventListener("input", () => {
+    s.text = title.value;
+    scheduleSave();
+  });
+  title.addEventListener("blur", () => {
+    s.text = title.value;
+    persist();
+  });
+
+  const chevron = document.createElement("span");
+  chevron.className = "chevron sub-chevron";
+  chevron.textContent = "›";
+  chevron.title = "展开/收起内容";
+
+  const del = document.createElement("button");
+  del.className = "del sub-del";
+  del.textContent = "🗑";
+  del.title = "删除子待办";
+  del.addEventListener("click", () => {
+    t.subs = t.subs.filter((x) => x.id !== s.id);
+    subExpandedIds.delete(s.id);
+    persist();
+    renderSubs(wrap, t);
+  });
+
+  const toggleSub = () => {
+    if (subExpandedIds.has(s.id)) subExpandedIds.delete(s.id);
+    else subExpandedIds.add(s.id);
+    li.classList.toggle("open");
+    if (li.classList.contains("open")) li.querySelector(".sub-desc").focus();
+  };
+  chevron.addEventListener("click", toggleSub);
+
+  row.append(check, title, chevron, del);
+
+  const desc = document.createElement("textarea");
+  desc.className = "sub-desc";
+  desc.value = s.desc || "";
+  desc.placeholder = "子待办内容…";
+  desc.addEventListener("input", () => {
+    s.desc = desc.value;
+    scheduleSave();
+  });
+  desc.addEventListener("blur", () => {
+    s.desc = desc.value;
+    persist();
+  });
+
+  li.append(row, desc);
   return li;
 }
 
@@ -221,7 +382,7 @@ function onPasteIntoEditor(e, editor, t) {
 
 // ---- Mutations ----
 async function add(text, due) {
-  todos.push({ id: uid(), text, due: due || "", desc: "", done: false, createdAt: Date.now() });
+  todos.push({ id: uid(), text, due: due || "", desc: "", done: false, createdAt: Date.now(), subs: [] });
   await persist();
   refresh();
 }
@@ -427,6 +588,15 @@ function buildMarkdown(items, label, start, end) {
     if (md) {
       L.push("");
       md.split("\n").forEach((l) => L.push(l ? `> ${l}` : ">"));
+    }
+    if (Array.isArray(t.subs) && t.subs.length) {
+      L.push("");
+      t.subs.forEach((s) => {
+        L.push(`- [${s.done ? "x" : " "}] ${s.text || "(无标题)"}`);
+        if (s.desc && s.desc.trim()) {
+          s.desc.split("\n").forEach((l) => L.push(l ? `  > ${l}` : "  >"));
+        }
+      });
     }
     L.push("");
   };
@@ -685,7 +855,7 @@ async function ensureNotifyPermission() {
 }
 async function testNotify() {
   if (!(await ensureNotifyPermission())) {
-    alert("通知权限被拒绝,请在 系统设置 → 通知 中允许「悬浮待办」。");
+    alert("通知权限被拒绝,请在 系统设置 → 通知 中允许「dudu tools」。");
     return;
   }
   const pending = todos.filter((t) => !t.done).length;
@@ -947,6 +1117,164 @@ function polishPrompt(md) {
   );
 }
 
+// ---- Toolbox: URL / Base64 codec · JSON format/minify · timestamp ----
+// UTF-8 safe Base64 (btoa only handles latin1, so round-trip through bytes).
+function b64encode(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = "";
+  bytes.forEach((b) => (bin += String.fromCharCode(b)));
+  return btoa(bin);
+}
+function b64decode(b64) {
+  const bin = atob(b64.trim());
+  const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+function tsParse(raw) {
+  raw = raw.trim();
+  if (!raw) throw new Error("请输入时间戳或日期");
+  let date;
+  if (/^\d+$/.test(raw)) {
+    let n = Number(raw);
+    if (raw.length <= 10) n *= 1000; // 10 位及以下按秒处理
+    date = new Date(n);
+  } else {
+    const n = Date.parse(raw);
+    if (Number.isNaN(n)) throw new Error("无法识别的日期格式");
+    date = new Date(n);
+  }
+  if (Number.isNaN(date.getTime())) throw new Error("无效的时间");
+  return date;
+}
+function fmtLocalFull(d) {
+  return (
+    `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ` +
+    `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`
+  );
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function setupTools() {
+  const panel = document.querySelector("#tools");
+  document.querySelector("#btn-tools").addEventListener("click", () => {
+    panel.hidden = false;
+  });
+  document.querySelector("#tools-back").addEventListener("click", () => {
+    panel.hidden = true;
+  });
+
+  // Tab switching.
+  const tabs = document.querySelector("#tools-tabs");
+  tabs.addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    tabs.querySelectorAll("button").forEach((x) => x.classList.toggle("active", x === b));
+    panel
+      .querySelectorAll(".tool-pane")
+      .forEach((p) => (p.hidden = p.dataset.pane !== b.dataset.tool));
+  });
+
+  // Codec actions.
+  const codecIn = document.querySelector("#codec-input");
+  const codecOut = document.querySelector("#codec-output");
+  panel.querySelector('[data-pane="codec"] .tool-actions').addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    const src = codecIn.value;
+    try {
+      let r = "";
+      switch (b.dataset.act) {
+        case "url-encode":
+          r = encodeURIComponent(src);
+          break;
+        case "url-decode":
+          r = decodeURIComponent(src);
+          break;
+        case "b64-encode":
+          r = b64encode(src);
+          break;
+        case "b64-decode":
+          r = b64decode(src);
+          break;
+      }
+      codecOut.value = r;
+    } catch (err) {
+      codecOut.value = "⚠ 处理失败:" + err.message;
+    }
+  });
+
+  // JSON actions.
+  const jsonIn = document.querySelector("#json-input");
+  const jsonOut = document.querySelector("#json-output");
+  panel.querySelector('[data-pane="json"] .tool-actions').addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    try {
+      const obj = JSON.parse(jsonIn.value);
+      jsonOut.value =
+        b.dataset.act === "json-minify" ? JSON.stringify(obj) : JSON.stringify(obj, null, 2);
+    } catch (err) {
+      jsonOut.value = "⚠ 不是合法的 JSON:" + err.message;
+    }
+  });
+
+  // Timestamp.
+  const tsIn = document.querySelector("#ts-input");
+  const tsResult = document.querySelector("#ts-result");
+  const runTs = () => {
+    try {
+      const d = tsParse(tsIn.value);
+      const rows = [
+        ["Unix 秒", String(Math.floor(d.getTime() / 1000))],
+        ["Unix 毫秒", String(d.getTime())],
+        ["本地时间", fmtLocalFull(d)],
+        ["UTC", d.toUTCString()],
+        ["ISO 8601", d.toISOString()],
+      ];
+      tsResult.classList.remove("err");
+      tsResult.innerHTML = rows
+        .map(
+          (r) =>
+            `<div class="ts-line"><span class="ts-key">${r[0]}</span>` +
+            `<span class="ts-val">${r[1]}</span></div>`
+        )
+        .join("");
+    } catch (err) {
+      tsResult.classList.add("err");
+      tsResult.textContent = "⚠ " + err.message;
+    }
+  };
+  document.querySelector('[data-act="ts-parse"]').addEventListener("click", runTs);
+  tsIn.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") runTs();
+  });
+  document.querySelector("#ts-now").addEventListener("click", () => {
+    tsIn.value = String(Date.now());
+    runTs();
+  });
+
+  // Copy buttons (shared).
+  panel.querySelectorAll(".copy-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const out = document.querySelector("#" + btn.dataset.target);
+      if (!out || !out.value) return;
+      const ok = await copyText(out.value);
+      const orig = btn.textContent;
+      btn.textContent = ok ? "✓ 已复制" : "复制失败";
+      setTimeout(() => (btn.textContent = orig), 1200);
+    });
+  });
+}
+
 // ---- Wire up ----
 window.addEventListener("DOMContentLoaded", async () => {
   // Ball: distinguish a click (open panel) from a drag (move window).
@@ -1114,6 +1442,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   });
 
   setupImageTools();
+  setupTools();
   loadChat();
 
   await load();
